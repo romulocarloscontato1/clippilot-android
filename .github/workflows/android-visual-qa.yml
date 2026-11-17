@@ -101,6 +101,15 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+      - name: Publish verified MP4 output
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ClipPilot-verified-3clips-MP4
+          path: qa/exports/
+          if-no-files-found: error
+          retention-days: 14
+
       - name: Publish real screenshots to qa-snapshots branch
         if: success()
         shell: bash
@@ -109,7 +118,7 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/clippilot-qa"
           cp qa/screenshots/*.png "${RUNNER_TEMP}/clippilot-qa/"
           cat > "${RUNNER_TEMP}/clippilot-qa/manifest.json" <<EOF
-          {"run_id": ${GITHUB_RUN_ID}, "source_commit": "${GITHUB_SHA}", "capture": "Android 35 emulator adb screencap -p", "screens": ["01-home-real.png", "02-new-project-real.png", "03-home-with-clips-real.png", "04-project-loaded-real.png", "05-preview-real.png", "06-exports-real.png"]}
+          {"run_id": ${GITHUB_RUN_ID}, "source_commit": "${GITHUB_SHA}", "capture": "Android 35 emulator adb screencap -p", "screens": ["01-home-real.png", "02-new-project-real.png", "03-home-with-clips-real.png", "04-project-loaded-real.png", "05-preview-real.png", "06-export-progress-real.png", "07-export-completed-real.png", "08-exports-real.png"]}
           EOF
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"

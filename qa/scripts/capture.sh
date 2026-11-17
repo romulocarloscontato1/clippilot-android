@@ -89,9 +89,38 @@ sleep 3
 adb exec-out screencap -p > qa/screenshots/05-preview-real.png
 test -s qa/screenshots/05-preview-real.png
 
-tap_by_label "Exportações"
-adb exec-out screencap -p > qa/screenshots/06-exports-real.png
-test -s qa/screenshots/06-exports-real.png
+# Run Media3 Transformer with the three actual clips and capture real progress.
+tap_by_label "Gerar MP4"
+sleep 2
+adb exec-out screencap -p > qa/screenshots/06-export-progress-real.png
+test -s qa/screenshots/06-export-progress-real.png
 
+# lastExport is written by the app only when the MP4 was validated.
+echo "Waiting for verified MP4..."
+export_path=""
+for attempt in $(seq 1 75); do
+  prefs_xml=$(adb exec-out run-as com.clippilot.android cat shared_prefs/clippilot-project.xml 2>/dev/null || true)
+  export_path=$(printf '%s' "$prefs_xml" | sed -n 's/.*name="lastExport">\([^<]*\)<.*/\1/p' | tr -d '\r')
+  if [ -n "$export_path" ]; then break; fi
+  sleep 4
+done
+if [ -z "$export_path" ]; then
+  echo "No verified MP4 produced." >&2
+  adb exec-out screencap -p > qa/screenshots/07-export-failed-real.png || true
+  adb logcat -d -t 3000 > qa/screenshots/emulator-logcat.txt || true
+  exit 1
+fi
+echo "Completed MP4: $export_path"
+adb exec-out screencap -p > qa/screenshots/07-export-completed-real.png
+test -s qa/screenshots/07-export-completed-real.png
+mkdir -p qa/exports
+adb exec-out run-as com.clippilot.android cat "$export_path" > qa/exports/assembled-3clips.mp4
+test -s qa/exports/assembled-3clips.mp4
+ffprobe -v error -show_entries format=duration:stream=codec_type,codec_name -of json qa/exports/assembled-3clips.mp4 | tee qa/exports/ffprobe.json
+python3 -c 'import json,subprocess; d=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration:stream=codec_type","-of","json","qa/exports/assembled-3clips.mp4"])); seconds=float(d["format"]["duration"]); streamtypes={s["codec_type"] for s in d["streams"]}; print("Duration",seconds,"Streams",streamtypes); assert 5.3<=seconds<=7.2, "Expected three two-second clips"; assert "video" in streamtypes and "audio" in streamtypes'
+
+tap_by_label "Exportações"
+adb exec-out screencap -p > qa/screenshots/08-exports-real.png
+test -s qa/screenshots/08-exports-real.png
 adb logcat -d -t 2000 > qa/screenshots/emulator-logcat.txt || true
 file qa/screenshots/*.png
