@@ -108,18 +108,18 @@ jobs:
               adb shell uiautomator dump /sdcard/qa-window.xml > /dev/null
               adb exec-out cat /sdcard/qa-window.xml > /tmp/qa-window.xml
               coordinates=$(python3 - "$label" <<'PY'
-import re,sys,xml.etree.ElementTree as ET
-root=ET.parse("/tmp/qa-window.xml").getroot()
-target=sys.argv[1]
-for node in root.iter("node"):
-    if node.attrib.get("text")==target or node.attrib.get("content-desc")==target:
-        m=re.match(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]",node.attrib.get("bounds",""))
-        if m:
+            import re,sys,xml.etree.ElementTree as ET
+            root=ET.parse("/tmp/qa-window.xml").getroot()
+            target=sys.argv[1]
+            for node in root.iter("node"):
+                if node.attrib.get("text")==target or node.attrib.get("content-desc")==target:
+                    m=re.match(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]",node.attrib.get("bounds",""))
+                    if m:
             a,b,c,d=map(int,m.groups())
             print((a+c)//2,(b+d)//2)
             sys.exit(0)
-sys.exit("Missing accessibility element: "+target)
-PY
+            sys.exit("Missing accessibility element: "+target)
+            PY
               )
               adb shell input tap $coordinates
               sleep 3
@@ -140,12 +140,12 @@ PY
               adb exec-in run-as com.clippilot.android sh -c "cat > files/qa-$i.mp4" < "qa/fixtures/qa-$i.mp4"
             done
             cat > /tmp/qa-project.xml <<'EOF'
-<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
-<map>
-  <string name="clips">["file:///data/user/0/com.clippilot.android/files/qa-1.mp4","file:///data/user/0/com.clippilot.android/files/qa-2.mp4","file:///data/user/0/com.clippilot.android/files/qa-3.mp4"]</string>
-  <string name="name">Maya - Episódio 04</string>
-</map>
-EOF
+            <?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+            <map>
+              <string name="clips">["file:///data/user/0/com.clippilot.android/files/qa-1.mp4","file:///data/user/0/com.clippilot.android/files/qa-2.mp4","file:///data/user/0/com.clippilot.android/files/qa-3.mp4"]</string>
+              <string name="name">Maya - Episódio 04</string>
+            </map>
+            EOF
             adb exec-in run-as com.clippilot.android sh -c 'cat > shared_prefs/clippilot-project.xml' < /tmp/qa-project.xml
             adb shell am force-stop com.clippilot.android
             adb shell am start -W -n com.clippilot.android/.MainActivity
