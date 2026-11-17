@@ -132,7 +132,19 @@ private fun ClipPilotApp() {
         Scaffold(
             containerColor = Background,
             bottomBar = {
-                Navigation(screen) { screen = it }
+                Column {
+                    if (screen == "create") {
+                        Button(
+                            onClick = { previewIndex = 0; screen = "preview" },
+                            enabled = clips.isNotEmpty(),
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp).height(46.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Cyan)
+                        ) {
+                            Text("Continuar →", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                    Navigation(screen) { screen = it }
+                }
             }
         ) { padding ->
             Column(
@@ -141,7 +153,7 @@ private fun ClipPilotApp() {
                     .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
                 BrandHeader()
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(12.dp))
                 when (screen) {
                     "home" -> HomeScreen(projectName, clips) { screen = "create" }
                     "create" -> CreateScreen(
@@ -357,80 +369,87 @@ private fun CreateScreen(
     clips: SnapshotStateList<Uri>, style: String, setStyle: (String) -> Unit,
     pick: () -> Unit, clear: () -> Unit, preview: (Int) -> Unit
 ) {
-    Text("Novo projeto", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 26.sp)
-    Text("Selecione seus clipes", color = Muted, fontSize = 14.sp)
-    Spacer(Modifier.height(22.dp))
-    Text("Nome do projeto", color = Color.White, fontWeight = FontWeight.SemiBold)
-    Spacer(Modifier.height(8.dp))
+    Box(
+        modifier = Modifier.fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(Brush.horizontalGradient(listOf(Color(0xFF09223D), Color(0xFF044D66))))
+            .padding(horizontal = 16.dp, vertical = 10.dp)
+    ) {
+        Column {
+            Text("Novo projeto", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 21.sp)
+            Text("Selecione seus clipes", color = Muted, fontSize = 12.sp)
+        }
+    }
+    Spacer(Modifier.height(12.dp))
+    Text("Nome do projeto", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+    Spacer(Modifier.height(4.dp))
     OutlinedTextField(
         value = projectName, onValueChange = setName,
-        modifier = Modifier.fillMaxWidth(), singleLine = true,
+        modifier = Modifier.fillMaxWidth().height(54.dp), singleLine = true,
+        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 14.sp),
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = Cyan, unfocusedBorderColor = Color(0xFF5F7187),
             focusedTextColor = Color.White, unfocusedTextColor = Color.White
         )
     )
-    Spacer(Modifier.height(22.dp))
-    Text("Etapa 1 de 3", color = Cyan, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-    Text("Adicione até 3 clipes para montar seu projeto", color = Muted, fontSize = 13.sp)
-    Spacer(Modifier.height(14.dp))
+    Spacer(Modifier.height(11.dp))
+    Text("Etapa 1 de 3", color = Cyan, fontSize = 16.sp, fontWeight = FontWeight.Bold)
+    Text("Adicione 3 clipes para a edição automática", color = Muted, fontSize = 11.sp)
+    Spacer(Modifier.height(9.dp))
     for (index in 0..2) {
         if (index < clips.size) {
             ClipItem(index, clips[index]) { preview(index) }
         } else {
             SurfaceCard {
-                Row(Modifier.fillMaxWidth().clickable(onClick = pick).padding(14.dp),
-                    verticalAlignment = Alignment.CenterVertically) {
-                    Box(Modifier.size(92.dp, 62.dp).background(PanelLight, RoundedCornerShape(10.dp)), contentAlignment = Alignment.Center) {
-                        Icon(Icons.Filled.Add, null, tint = Cyan, modifier = Modifier.size(28.dp))
+                Row(
+                    Modifier.fillMaxWidth().clickable(onClick = pick).padding(9.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        Modifier.size(76.dp, 50.dp).background(PanelLight, RoundedCornerShape(9.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Add, null, tint = Cyan, modifier = Modifier.size(23.dp))
                     }
-                    Spacer(Modifier.width(12.dp))
-                    Column {
-                        Text("Clipe ${index + 1}", color = Color.White, fontWeight = FontWeight.SemiBold)
-                        Text("Toque para selecionar vídeos", color = Muted, fontSize = 12.sp)
+                    Spacer(Modifier.width(10.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text("Clipe " + (index + 1), color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text("Selecionar vídeo", color = Muted, fontSize = 11.sp)
                     }
                 }
             }
         }
-        Spacer(Modifier.height(9.dp))
+        Spacer(Modifier.height(6.dp))
     }
-    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-        Button(onClick = pick, colors = ButtonDefaults.buttonColors(containerColor = Cyan), modifier = Modifier.weight(1f)) {
-            Icon(Icons.Filled.VideoLibrary, null)
-            Spacer(Modifier.width(6.dp))
-            Text("Selecionar vídeos", fontSize = 12.sp)
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        OutlinedButton(
+            onClick = pick, modifier = Modifier.weight(1f).height(39.dp),
+            contentPadding = PaddingValues(horizontal = 7.dp, vertical = 0.dp)
+        ) {
+            Icon(Icons.Filled.VideoLibrary, null, modifier = Modifier.size(17.dp))
+            Spacer(Modifier.width(5.dp))
+            Text("Selecionar vídeos", fontSize = 11.sp)
         }
         if (clips.isNotEmpty()) {
-            OutlinedButton(onClick = clear) { Text("Limpar", fontSize = 12.sp) }
+            TextButton(onClick = clear) { Text("Limpar", fontSize = 11.sp) }
         }
     }
-    Spacer(Modifier.height(20.dp))
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        SmallOption("Formato", "9:16")
-        SmallOption("Legendas", "Em breve")
-        SmallOption("Música", "Original")
+    Spacer(Modifier.height(10.dp))
+    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        SmallOption("Formato", "Vertical 9:16", Modifier.weight(1f))
+        SmallOption("Legendas", "Em breve", Modifier.weight(1f))
+        SmallOption("Música", "Original", Modifier.weight(1f))
     }
-    Spacer(Modifier.height(22.dp))
+    Spacer(Modifier.height(13.dp))
     SectionTitle("Escolha o estilo")
-    Text("Preferência visual — aplicação automática em desenvolvimento", color = Muted, fontSize = 11.sp)
-    Spacer(Modifier.height(12.dp))
-    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        StyleCard("Viral dinâmico", "Ritmo rápido", style == "Viral dinâmico") { setStyle("Viral dinâmico") }
-        StyleCard("Profissional", "Limpo", style == "Profissional") { setStyle("Profissional") }
-        StyleCard("Cinematográfico", "Suave", style == "Cinematográfico") { setStyle("Cinematográfico") }
-    }
-    Spacer(Modifier.height(25.dp))
-    Button(
-        onClick = { preview(0) }, enabled = clips.isNotEmpty(),
-        modifier = Modifier.fillMaxWidth().height(53.dp),
-        colors = ButtonDefaults.buttonColors(containerColor = Cyan)
-    ) {
-        Icon(Icons.Filled.PlayArrow, null)
-        Spacer(Modifier.width(8.dp))
-        Text("Prévia dos clipes", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+    Text("Estilos serão aplicados nas próximas etapas", color = Muted, fontSize = 10.sp)
+    Spacer(Modifier.height(8.dp))
+    Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
+        StyleCard("Viral dinâmico", "Cortes rápidos", style == "Viral dinâmico") { setStyle("Viral dinâmico") }
+        StyleCard("Profissional", "Visual limpo", style == "Profissional") { setStyle("Profissional") }
+        StyleCard("Cinematográfico", "Ritmo suave", style == "Cinematográfico") { setStyle("Cinematográfico") }
     }
     Spacer(Modifier.height(8.dp))
-    Text("A prévia reproduz cada clipe original; ainda não há vídeo final renderizado.", color = Muted, fontSize = 11.sp)
 }
 
 @Composable
@@ -439,17 +458,17 @@ private fun ClipItem(index: Int, uri: Uri, preview: () -> Unit) {
     val bmp = remember(uri) { thumbnail(context, uri) }
     val videoDuration = remember(uri) { duration(context, uri) }
     SurfaceCard {
-        Row(Modifier.fillMaxWidth().clickable(onClick = preview).padding(10.dp),
+        Row(Modifier.fillMaxWidth().clickable(onClick = preview).padding(9.dp),
             verticalAlignment = Alignment.CenterVertically) {
-            Box(Modifier.size(100.dp, 64.dp).clip(RoundedCornerShape(11.dp)).background(PanelLight),
+            Box(Modifier.size(76.dp, 50.dp).clip(RoundedCornerShape(11.dp)).background(PanelLight),
                 contentAlignment = Alignment.Center) {
                 if (bmp != null) Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                 else Icon(Icons.Filled.Movie, null, tint = Cyan)
             }
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
-                Text("Clipe ${index + 1}", color = Color.White, fontWeight = FontWeight.SemiBold)
-                Text("✓ Carregado • $videoDuration", color = Green, fontSize = 12.sp)
+                Text("Clipe ${index + 1}", color = Color.White, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Text("✓ Carregado • $videoDuration", color = Green, fontSize = 11.sp)
             }
             Icon(Icons.Filled.PlayArrow, "Reproduzir", tint = Cyan)
         }
@@ -457,9 +476,9 @@ private fun ClipItem(index: Int, uri: Uri, preview: () -> Unit) {
 }
 
 @Composable
-private fun SmallOption(title: String, value: String) {
-    SurfaceCard {
-        Column(Modifier.padding(horizontal = 14.dp, vertical = 12.dp)) {
+private fun SmallOption(title: String, value: String, modifier: Modifier = Modifier) {
+    SurfaceCard(modifier) {
+        Column(Modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
             Text(title, color = Muted, fontSize = 10.sp)
             Text(value, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
         }
@@ -470,18 +489,18 @@ private fun SmallOption(title: String, value: String) {
 private fun StyleCard(title: String, detail: String, selected: Boolean, onClick: () -> Unit) {
     val borderColor = if (selected) Cyan else Color(0xFF274861)
     Column(
-        Modifier.width(138.dp).height(114.dp).border(1.5.dp, borderColor, RoundedCornerShape(15.dp))
+        Modifier.width(113.dp).height(100.dp).border(1.5.dp, borderColor, RoundedCornerShape(15.dp))
             .clip(RoundedCornerShape(15.dp))
             .background(Brush.linearGradient(listOf(Color(0xFF064D61), Color(0xFF112138))))
-            .clickable(onClick = onClick).padding(12.dp)
+            .clickable(onClick = onClick).padding(9.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(Icons.Filled.SmartDisplay, null, tint = Cyan, modifier = Modifier.size(21.dp))
             Spacer(Modifier.weight(1f))
             if (selected) Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(18.dp))
         }
-        Spacer(Modifier.height(9.dp))
-        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp, maxLines = 2)
+        Spacer(Modifier.height(7.dp))
+        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 2)
         Text(detail, color = Muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
@@ -621,13 +640,13 @@ private fun SectionTitle(title: String) {
 @Composable
 private fun Navigation(selected: String, navigate: (String) -> Unit) {
     Row(
-        Modifier.fillMaxWidth().background(Color(0xFF101720)).padding(horizontal = 10.dp, vertical = 10.dp),
+        Modifier.fillMaxWidth().background(Color(0xFF101720)).padding(horizontal = 10.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceAround
     ) {
         NavItem(Icons.Filled.Home, "Início", selected == "home") { navigate("home") }
         NavItem(Icons.Filled.Folder, "Projetos", selected == "projects") { navigate("projects") }
-        Box(Modifier.size(55.dp).clip(RoundedCornerShape(17.dp)).background(Cyan)
+        Box(Modifier.size(49.dp).clip(RoundedCornerShape(15.dp)).background(Cyan)
             .clickable { navigate("create") }, contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.Add, "Novo projeto", tint = Background, modifier = Modifier.size(32.dp))
         }
@@ -640,6 +659,6 @@ private fun NavItem(image: androidx.compose.ui.graphics.vector.ImageVector, name
     Column(Modifier.clickable(onClick = click).padding(horizontal = 9.dp), horizontalAlignment = Alignment.CenterHorizontally) {
         Icon(image, name, tint = if (selected) Cyan else Muted, modifier = Modifier.size(24.dp))
         Spacer(Modifier.height(3.dp))
-        Text(name, color = if (selected) Cyan else Muted, fontSize = 11.sp)
+        Text(name, color = if (selected) Cyan else Muted, fontSize = 10.sp)
     }
 }
