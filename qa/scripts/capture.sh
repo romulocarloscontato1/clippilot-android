@@ -92,7 +92,7 @@ test -s qa/screenshots/05-preview-real.png
 
 # Run Media3 Transformer with the three actual clips and capture real progress.
 # ExoPlayer can keep accessibility busy; use the measured button center on 1080x1920.
-adb shell input tap 540 1615
+adb shell input tap 540 1548
 sleep 2
 adb exec-out screencap -p > qa/screenshots/06-export-progress-real.png
 test -s qa/screenshots/06-export-progress-real.png
