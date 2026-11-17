@@ -8,6 +8,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: clippilot-visual-qa-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   screenshot:
     runs-on: ubuntu-22.04
@@ -84,11 +88,11 @@ jobs:
         uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: 35
-          target: google_apis
+          target: default
           arch: x86_64
           profile: pixel_3a
           ram-size: 3072M
-          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
+          emulator-options: -no-window -no-snapshot -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none -camera-front none
           disable-animations: true
           script: bash qa/scripts/capture.sh
 

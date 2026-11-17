@@ -2,6 +2,7 @@
 set -euo pipefail
 set -e
 mkdir -p qa/screenshots
+trap 'adb exec-out screencap -p > qa/screenshots/00-failure-real.png || true; adb logcat -d -t 3000 > qa/screenshots/emulator-logcat.txt || true' ERR
 adb shell wm size 1080x1920
 adb shell wm density 420
 adb shell settings put system accelerometer_rotation 0 || true
@@ -22,7 +23,7 @@ ensure_app_visible() {
     fi
     if grep -q 'Pixel Launcher' /tmp/qa-health.xml; then
       echo "Pixel Launcher ANR overlay; choosing Wait, attempt ${attempt}"
-      adb shell input tap 540 1085 || true
+      adb shell input tap 540 960 || true
       sleep 3
     fi
     adb shell am start -W -n com.clippilot.android/.MainActivity || true
