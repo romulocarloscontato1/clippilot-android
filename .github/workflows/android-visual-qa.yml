@@ -59,6 +59,17 @@ jobs:
       - name: Build debug APK
         run: gradle :app:assembleDebug --no-daemon --stacktrace
 
+      - name: Generate three local MP4 fixtures for actual playback testing
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qa/fixtures
+          command -v ffmpeg
+          ffmpeg -nostdin -hide_banner -loglevel error -y -f lavfi -i "testsrc2=size=360x640:rate=24:duration=2" -f lavfi -i "sine=frequency=440:sample_rate=44100:duration=2" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest qa/fixtures/qa-1.mp4
+          ffmpeg -nostdin -hide_banner -loglevel error -y -f lavfi -i "smptebars=size=360x640:rate=24:duration=2" -f lavfi -i "sine=frequency=550:sample_rate=44100:duration=2" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest qa/fixtures/qa-2.mp4
+          ffmpeg -nostdin -hide_banner -loglevel error -y -f lavfi -i "color=c=0x0d4681:size=360x640:rate=24:duration=2" -f lavfi -i "sine=frequency=660:sample_rate=44100:duration=2" -c:v libx264 -preset ultrafast -pix_fmt yuv420p -c:a aac -shortest qa/fixtures/qa-3.mp4
+          ls -lh qa/fixtures/*.mp4
+
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
@@ -90,12 +101,76 @@ jobs:
             test -s qa/screenshots/01-home-real.png
             adb shell uiautomator dump /sdcard/clippilot-ui.xml || true
             adb pull /sdcard/clippilot-ui.xml qa/screenshots/01-ui.xml || true
-            adb shell input tap 230 610
-            sleep 3
+            # Tap the real button using its accessibility bounds. This survives changes
+            # in DPI, status bar height and screen dimensions.
+            tap_by_label() {
+              label="$1"
+              adb shell uiautomator dump /sdcard/qa-window.xml > /dev/null
+              adb exec-out cat /sdcard/qa-window.xml > /tmp/qa-window.xml
+              coordinates=$(python3 - "$label" <<'PY'
+import re,sys,xml.etree.ElementTree as ET
+root=ET.parse("/tmp/qa-window.xml").getroot()
+target=sys.argv[1]
+for node in root.iter("node"):
+    if node.attrib.get("text")==target or node.attrib.get("content-desc")==target:
+        m=re.match(r"\\[(\\d+),(\\d+)\\]\\[(\\d+),(\\d+)\\]",node.attrib.get("bounds",""))
+        if m:
+            a,b,c,d=map(int,m.groups())
+            print((a+c)//2,(b+d)//2)
+            sys.exit(0)
+sys.exit("Missing accessibility element: "+target)
+PY
+              )
+              adb shell input tap $coordinates
+              sleep 3
+            }
+
+            tap_by_label "Novo projeto"
             adb exec-out screencap -p > qa/screenshots/02-new-project-real.png
             test -s qa/screenshots/02-new-project-real.png
             adb shell uiautomator dump /sdcard/clippilot-create-ui.xml || true
             adb pull /sdcard/clippilot-create-ui.xml qa/screenshots/02-ui.xml || true
+
+            # Put three reproducible MP4 files inside the real debug APK sandbox,
+            # then populate the same SharedPreferences used for imported projects.
+            # This tests real thumbnail decoding and ExoPlayer playback without
+            # any fabricated or post-processed UI screenshot.
+            adb shell run-as com.clippilot.android mkdir -p files shared_prefs
+            for i in 1 2 3; do
+              adb exec-in run-as com.clippilot.android sh -c "cat > files/qa-$i.mp4" < "qa/fixtures/qa-$i.mp4"
+            done
+            cat > /tmp/qa-project.xml <<'EOF'
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+  <string name="clips">["file:///data/user/0/com.clippilot.android/files/qa-1.mp4","file:///data/user/0/com.clippilot.android/files/qa-2.mp4","file:///data/user/0/com.clippilot.android/files/qa-3.mp4"]</string>
+  <string name="name">Maya - Episódio 04</string>
+</map>
+EOF
+            adb exec-in run-as com.clippilot.android sh -c 'cat > shared_prefs/clippilot-project.xml' < /tmp/qa-project.xml
+            adb shell am force-stop com.clippilot.android
+            adb shell am start -W -n com.clippilot.android/.MainActivity
+            sleep 5
+            adb exec-out screencap -p > qa/screenshots/03-home-with-clips-real.png
+            test -s qa/screenshots/03-home-with-clips-real.png
+
+            tap_by_label "Novo projeto"
+            adb exec-out screencap -p > qa/screenshots/04-project-loaded-real.png
+            test -s qa/screenshots/04-project-loaded-real.png
+            # Check that the real app recognizes all three fixture videos.
+            adb shell uiautomator dump /sdcard/qa-clips-ui.xml >/dev/null
+            adb exec-out cat /sdcard/qa-clips-ui.xml > qa/screenshots/04-clips-ui.xml
+            grep -q 'Clipe 3' qa/screenshots/04-clips-ui.xml
+
+            # The continue button is sticky. Open actual single-clip playback.
+            tap_by_label "Continuar →"
+            sleep 3
+            adb exec-out screencap -p > qa/screenshots/05-preview-real.png
+            test -s qa/screenshots/05-preview-real.png
+
+            tap_by_label "Exportações"
+            adb exec-out screencap -p > qa/screenshots/06-exports-real.png
+            test -s qa/screenshots/06-exports-real.png
+
             adb logcat -d -t 2000 > qa/screenshots/emulator-logcat.txt || true
             file qa/screenshots/*.png
 
@@ -116,7 +191,7 @@ jobs:
           mkdir -p "${RUNNER_TEMP}/clippilot-qa"
           cp qa/screenshots/*.png "${RUNNER_TEMP}/clippilot-qa/"
           cat > "${RUNNER_TEMP}/clippilot-qa/manifest.json" <<EOF
-          {"run_id": ${GITHUB_RUN_ID}, "source_commit": "${GITHUB_SHA}", "capture": "Android 35 emulator adb screencap -p", "screens": ["01-home-real.png", "02-new-project-real.png"]}
+          {"run_id": ${GITHUB_RUN_ID}, "source_commit": "${GITHUB_SHA}", "capture": "Android 35 emulator adb screencap -p", "screens": ["01-home-real.png", "02-new-project-real.png", "03-home-with-clips-real.png", "04-project-loaded-real.png", "05-preview-real.png", "06-exports-real.png"]}
           EOF
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config user.name "github-actions[bot]"
