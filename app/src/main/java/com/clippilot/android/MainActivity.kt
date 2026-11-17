@@ -5,6 +5,7 @@ import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Bundle
+import java.io.File
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -133,6 +134,13 @@ private fun ClipPilotApp() {
             containerColor = Background,
             bottomBar = {
                 Column(Modifier.navigationBarsPadding()) {
+                    if (screen == "preview" && clips.size == 3) {
+                        Button(
+                            onClick = { screen = "export" },
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 6.dp).height(46.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = Cyan)
+                        ) { Text("Gerar MP4", fontWeight = FontWeight.Bold) }
+                    }
                     if (screen == "create") {
                         Button(
                             onClick = { previewIndex = 0; screen = "preview" },
@@ -169,7 +177,13 @@ private fun ClipPilotApp() {
                         clips = clips,
                         initialIndex = previewIndex,
                         style = style,
-                        back = { screen = "create" }
+                        back = { screen = "create" },
+                        onExport = { screen = "export" }
+                    )
+                    "export" -> VideoExportScreen(
+                        clips = clips.toList(),
+                        projectName = projectName,
+                        onOpenExports = { screen = "exports" }
                     )
                     "projects" -> ProjectsScreen(projectName, clips.size) { screen = "create" }
                     "exports" -> ExportsScreen()
@@ -511,7 +525,7 @@ private fun StyleCard(title: String, detail: String, selected: Boolean, onClick:
 }
 
 @Composable
-private fun PreviewScreen(projectName: String, clips: List<Uri>, initialIndex: Int, style: String, back: () -> Unit) {
+private fun PreviewScreen(projectName: String, clips: List<Uri>, initialIndex: Int, style: String, back: () -> Unit, onExport: () -> Unit) {
     if (clips.isEmpty()) {
         Text("Nenhum clipe disponível", color = Color.White)
         return
@@ -554,15 +568,21 @@ private fun PreviewScreen(projectName: String, clips: List<Uri>, initialIndex: I
     Spacer(Modifier.height(18.dp))
     SurfaceCard {
         Column(Modifier.fillMaxWidth().padding(16.dp)) {
-            Text("Montagem automática em desenvolvimento", color = Cyan, fontWeight = FontWeight.Bold)
+            Text("Montagem MP4 disponível", color = Cyan, fontWeight = FontWeight.Bold)
             Spacer(Modifier.height(7.dp))
             Text(
-                "Nesta versão você consegue importar e assistir aos clipes reais. A junção dos vídeos, as transições, a correção de cores, as legendas e a exportação MP4 serão disponibilizadas em próximas entregas.",
+                "Você já pode juntar os três clipes em um único MP4 com áudio original. Transições, correção de cores, movimento e legendas automáticas ainda estão em desenvolvimento.",
                 color = Muted, fontSize = 13.sp
             )
         }
     }
     Spacer(Modifier.height(18.dp))
+    if (clips.size == 3) {
+        Button(onClick = onExport, modifier = Modifier.fillMaxWidth(), colors = ButtonDefaults.buttonColors(containerColor = Cyan)) {
+            Text("Gerar vídeo MP4", fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(8.dp))
+    }
     OutlinedButton(onClick = back, modifier = Modifier.fillMaxWidth()) { Text("Voltar ao projeto") }
 }
 
@@ -610,15 +630,43 @@ private fun ProjectsScreen(projectName: String, clipCount: Int, open: () -> Unit
 
 @Composable
 private fun ExportsScreen() {
+    val context = LocalContext.current
+    val last = prefs(context).getString("lastExport", "") ?: ""
+    val file = remember(last) { if (last.isNotBlank()) File(last) else null }
+    var saving by remember { mutableStateOf(false) }
     SectionTitle("Exportações")
-    Spacer(Modifier.height(18.dp))
-    SurfaceCard {
-        Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(Icons.Filled.VideoLibrary, null, tint = Cyan, modifier = Modifier.size(38.dp))
-            Spacer(Modifier.width(14.dp))
-            Column {
-                Text("Nenhum vídeo exportado", color = Color.White, fontWeight = FontWeight.Bold)
-                Text("A exportação MP4 chegará nas próximas etapas.", color = Muted, fontSize = 12.sp)
+    Spacer(Modifier.height(16.dp))
+    if (file != null && file.exists() && file.length() > 0) {
+        SurfaceCard {
+            Column(Modifier.fillMaxWidth().padding(16.dp)) {
+                Text("Vídeo MP4 criado", color = Green, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.height(5.dp))
+                Text("ClipPilot • " + String.format("%.1f", file.length() / 1048576f) + " MB", color = Muted, fontSize = 12.sp)
+                Spacer(Modifier.height(12.dp))
+                VideoPlayer(Uri.fromFile(file))
+                Spacer(Modifier.height(12.dp))
+                Button(
+                    onClick = {
+                        saving = true
+                        val uri = ExportVideoEngine.saveToGallery(context, file)
+                        saving = false
+                        Toast.makeText(context, if (uri != null) "Salvo em Filmes/ClipPilot" else "Falha ao salvar na galeria", Toast.LENGTH_LONG).show()
+                    },
+                    enabled = !saving,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = Cyan)
+                ) { Text("Salvar na galeria", fontWeight = FontWeight.Bold) }
+            }
+        }
+    } else {
+        SurfaceCard {
+            Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Filled.VideoLibrary, null, tint = Cyan, modifier = Modifier.size(38.dp))
+                Spacer(Modifier.width(14.dp))
+                Column {
+                    Text("Nenhum vídeo exportado", color = Color.White, fontWeight = FontWeight.Bold)
+                    Text("Importe três clipes e toque em Gerar MP4 na prévia.", color = Muted, fontSize = 12.sp)
+                }
             }
         }
     }
