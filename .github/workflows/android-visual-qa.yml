@@ -86,14 +86,14 @@ jobs:
             adb shell am force-stop com.clippilot.android || true
             adb shell am start -W -n com.clippilot.android/.MainActivity
             sleep 6
-            adb shell screencap -p /sdcard/clippilot_home.png
-            adb pull /sdcard/clippilot_home.png qa/screenshots/01-home-real.png
+            adb exec-out screencap -p > qa/screenshots/01-home-real.png
+            test -s qa/screenshots/01-home-real.png
             adb shell uiautomator dump /sdcard/clippilot-ui.xml || true
             adb pull /sdcard/clippilot-ui.xml qa/screenshots/01-ui.xml || true
-            adb shell input tap 665 1800
+            adb shell input tap 230 610
             sleep 3
-            adb shell screencap -p /sdcard/clippilot_create.png
-            adb pull /sdcard/clippilot_create.png qa/screenshots/02-new-project-real.png
+            adb exec-out screencap -p > qa/screenshots/02-new-project-real.png
+            test -s qa/screenshots/02-new-project-real.png
             adb shell uiautomator dump /sdcard/clippilot-create-ui.xml || true
             adb pull /sdcard/clippilot-create-ui.xml qa/screenshots/02-ui.xml || true
             adb logcat -d -t 2000 > qa/screenshots/emulator-logcat.txt || true
