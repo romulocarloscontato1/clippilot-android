@@ -1,1 +1,1 @@
-{"run_id":44024548555,"source_commit":"d3a7632934618239e4d50b3e8b9ff7c7aec8aba4","status":"starting"}
+{"run_id": 44024548555, "source_commit": "d3a7632934618239e4d50b3e8b9ff7c7aec8aba4", "capture": "Android 35 emulator adb screencap -p", "screens": ["01-home-real.png", "02-new-project-real.png", "03-home-with-clips-real.png", "04-project-loaded-real.png", "05-preview-real.png", "06-export-progress-real.png", "07-export-completed-real.png", "08-exports-real.png"]}
