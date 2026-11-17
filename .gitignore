@@ -1,0 +1,18 @@
+# Gradle / Android
+.gradle/
+build/
+**/build/
+.kotlin/
+local.properties
+*.log
+.idea/
+*.iml
+.cxx/
+.externalNativeBuild/
+captures/
+*.apk
+*.aab
+*.jks
+*.keystore
+google-services.json
+output-metadata.json
