@@ -90,7 +90,8 @@ adb exec-out screencap -p > qa/screenshots/05-preview-real.png
 test -s qa/screenshots/05-preview-real.png
 
 # Run Media3 Transformer with the three actual clips and capture real progress.
-tap_by_label "Gerar MP4"
+# ExoPlayer can keep accessibility busy; use the measured button center on 1080x1920.
+adb shell input tap 540 1615
 sleep 2
 adb exec-out screencap -p > qa/screenshots/06-export-progress-real.png
 test -s qa/screenshots/06-export-progress-real.png
@@ -119,7 +120,7 @@ test -s qa/exports/assembled-3clips.mp4
 ffprobe -v error -show_entries format=duration:stream=codec_type,codec_name -of json qa/exports/assembled-3clips.mp4 | tee qa/exports/ffprobe.json
 python3 -c 'import json,subprocess; d=json.loads(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration:stream=codec_type","-of","json","qa/exports/assembled-3clips.mp4"])); seconds=float(d["format"]["duration"]); streamtypes={s["codec_type"] for s in d["streams"]}; print("Duration",seconds,"Streams",streamtypes); assert 5.3<=seconds<=7.2, "Expected three two-second clips"; assert "video" in streamtypes and "audio" in streamtypes'
 
-tap_by_label "Exportações"
+adb shell input tap 940 1755
 adb exec-out screencap -p > qa/screenshots/08-exports-real.png
 test -s qa/screenshots/08-exports-real.png
 adb logcat -d -t 2000 > qa/screenshots/emulator-logcat.txt || true
