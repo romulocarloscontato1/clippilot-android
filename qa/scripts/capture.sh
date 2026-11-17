@@ -9,7 +9,29 @@ adb shell settings put system user_rotation 0 || true
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb shell am force-stop com.clippilot.android || true
 adb shell am start -W -n com.clippilot.android/.MainActivity
-sleep 6
+
+# The Pixel Launcher may show a system ANR dialog on cold emulators. Verify
+# ClipPilot is truly foreground; do not capture any system overlay as app UI.
+ensure_app_visible() {
+  for attempt in 1 2 3 4 5 6; do
+    sleep 4
+    adb shell uiautomator dump /sdcard/qa-health.xml > /dev/null 2>&1 || true
+    adb exec-out cat /sdcard/qa-health.xml > /tmp/qa-health.xml || true
+    if grep -q 'Novo projeto' /tmp/qa-health.xml; then
+      return 0
+    fi
+    if grep -q 'Pixel Launcher' /tmp/qa-health.xml; then
+      echo "Pixel Launcher ANR overlay; choosing Wait, attempt ${attempt}"
+      adb shell input tap 540 1085 || true
+      sleep 3
+    fi
+    adb shell am start -W -n com.clippilot.android/.MainActivity || true
+  done
+  echo "ClipPilot home screen not visible after recovery attempts" >&2
+  cat /tmp/qa-health.xml >&2 || true
+  return 1
+}
+ensure_app_visible
 adb exec-out screencap -p > qa/screenshots/01-home-real.png
 test -s qa/screenshots/01-home-real.png
 adb shell uiautomator dump /sdcard/clippilot-ui.xml || true
@@ -49,7 +71,7 @@ EOF
 adb exec-in run-as com.clippilot.android sh -c 'cat > shared_prefs/clippilot-project.xml' < /tmp/qa-project.xml
 adb shell am force-stop com.clippilot.android
 adb shell am start -W -n com.clippilot.android/.MainActivity
-sleep 5
+ensure_app_visible
 adb exec-out screencap -p > qa/screenshots/03-home-with-clips-real.png
 test -s qa/screenshots/03-home-with-clips-real.png
 
