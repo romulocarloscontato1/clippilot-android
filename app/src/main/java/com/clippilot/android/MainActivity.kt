@@ -21,6 +21,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Folder
@@ -141,7 +143,7 @@ private fun ClipPilotApp() {
                 BrandHeader()
                 Spacer(Modifier.height(20.dp))
                 when (screen) {
-                    "home" -> HomeScreen(clips.size) { screen = "create" }
+                    "home" -> HomeScreen(projectName, clips) { screen = "create" }
                     "create" -> CreateScreen(
                         projectName = projectName,
                         setName = { projectName = it; prefs(context).edit().putString("name", it).apply() },
@@ -158,6 +160,7 @@ private fun ClipPilotApp() {
                         back = { screen = "create" }
                     )
                     "projects" -> ProjectsScreen(projectName, clips.size) { screen = "create" }
+                    "exports" -> ExportsScreen()
                 }
             }
         }
@@ -166,85 +169,184 @@ private fun ClipPilotApp() {
 
 @Composable
 private fun BrandHeader() {
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    val context = LocalContext.current
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Box(
-            Modifier.size(46.dp).clip(RoundedCornerShape(13.dp))
+            Modifier.size(44.dp).clip(RoundedCornerShape(12.dp))
                 .background(Brush.linearGradient(listOf(Cyan, Blue))),
             contentAlignment = Alignment.Center
         ) {
-            Icon(Icons.Filled.PlayArrow, null, tint = Background, modifier = Modifier.size(35.dp))
+            Icon(Icons.Filled.PlayArrow, null, tint = Background, modifier = Modifier.size(33.dp))
         }
-        Spacer(Modifier.width(12.dp))
-        Column {
-            Text("ClipPilot", color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Bold)
-            Text("Edição automática de vídeos", color = Muted, fontSize = 12.sp)
+        Spacer(Modifier.width(10.dp))
+        Column(Modifier.weight(1f)) {
+            Text("ClipPilot", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Bold)
+            Text("Edição automática de vídeos", color = Muted, fontSize = 11.sp)
         }
-        Spacer(Modifier.weight(1f))
-        Text("v0.1", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        IconButton(onClick = {
+            Toast.makeText(context, "Notificações: em desenvolvimento", Toast.LENGTH_SHORT).show()
+        }) {
+            Icon(Icons.Filled.Notifications, "Notificações", tint = Color.White)
+        }
+        IconButton(onClick = {
+            Toast.makeText(context, "Perfil: em desenvolvimento", Toast.LENGTH_SHORT).show()
+        }) {
+            Icon(Icons.Filled.AccountCircle, "Perfil", tint = Muted)
+        }
     }
 }
 
 @Composable
-private fun HomeScreen(clipCount: Int, onNew: () -> Unit) {
+private fun HomeScreen(projectName: String, clips: List<Uri>, onNew: () -> Unit) {
+    val count = clips.size
     Column {
-        Box(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(22.dp))
-                .background(Brush.linearGradient(listOf(Color(0xFF044D60), Color(0xFF072852), Blue)))
-                .padding(20.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth().height(176.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Brush.linearGradient(listOf(Color(0xFF04505B), Color(0xFF063D62), Color(0xFF083E91))))
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Column {
-                Text("Crie vídeos incríveis", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 25.sp)
-                Text("com seus próprios clipes", color = Cyan, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+            Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
+                Text("Crie vídeos incríveis", color = Color.White, fontWeight = FontWeight.ExtraBold, fontSize = 19.sp, lineHeight = 21.sp)
+                Text("em segundos", color = Cyan, fontWeight = FontWeight.Bold, fontSize = 19.sp, lineHeight = 21.sp)
+                Spacer(Modifier.height(8.dp))
+                Text("Importe 3 clipes e prepare o projeto para edição automática.", color = Color.White, fontSize = 11.sp, lineHeight = 15.sp)
                 Spacer(Modifier.height(12.dp))
-                Text("Importe três clipes, organize o projeto e acompanhe a evolução do editor.", color = Color.White, fontSize = 14.sp)
-                Spacer(Modifier.height(22.dp))
-                Button(onClick = onNew, colors = ButtonDefaults.buttonColors(containerColor = Cyan)) {
-                    Icon(Icons.Filled.Add, null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Novo projeto", fontWeight = FontWeight.Bold)
+                Button(
+                    onClick = onNew,
+                    contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = Cyan),
+                    modifier = Modifier.height(38.dp)
+                ) {
+                    Icon(Icons.Filled.Add, null, modifier = Modifier.size(17.dp))
+                    Spacer(Modifier.width(3.dp))
+                    Text("Novo projeto", fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                }
+            }
+            Row(
+                modifier = Modifier.width(140.dp).height(133.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp)
+            ) {
+                Column(
+                    modifier = Modifier.width(55.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    for (i in 0 until 3) {
+                        HeroClip(clips.getOrNull(i), i)
+                    }
+                }
+                Text("→", color = Cyan, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier.width(64.dp).height(112.dp)
+                        .border(1.5.dp, Cyan, RoundedCornerShape(10.dp))
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(Brush.verticalGradient(listOf(Color(0xFF6880AC), Color(0xFF234A8C), Color(0xFF09152D)))),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(Icons.Filled.PlayArrow, "Prévia de vídeo", tint = Color.White, modifier = Modifier.size(33.dp))
                 }
             }
         }
-        Spacer(Modifier.height(22.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Metric("Projetos", "1", Modifier.weight(1f))
-            Metric("Clipes", clipCount.toString(), Modifier.weight(1f))
+        Spacer(Modifier.height(16.dp))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
+            Metric("Projetos", if (count > 0) "1" else "0", Modifier.weight(1f))
             Metric("Exportados", "0", Modifier.weight(1f))
+            Metric("Fila", "0", Modifier.weight(1f))
         }
-        Spacer(Modifier.height(26.dp))
-        SectionTitle("Seu projeto atual")
+        Spacer(Modifier.height(20.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { SectionTitle("Projetos recentes") }
+            Text("Ver todos ›", color = Cyan, fontSize = 12.sp, modifier = Modifier.clickable(onClick = onNew))
+        }
         Spacer(Modifier.height(10.dp))
-        SurfaceCard {
-            Row(Modifier.fillMaxWidth().clickable(onClick = onNew).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Filled.Movie, null, tint = Cyan, modifier = Modifier.size(40.dp))
-                Spacer(Modifier.width(14.dp))
-                Column(Modifier.weight(1f)) {
-                    Text("Meu primeiro vídeo", color = Color.White, fontWeight = FontWeight.SemiBold)
-                    Text("$clipCount de 3 clipes selecionados", color = Muted, fontSize = 12.sp)
+        if (count > 0) {
+            SurfaceCard {
+                Row(
+                    Modifier.fillMaxWidth().clickable(onClick = onNew).padding(11.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(Modifier.size(65.dp, 56.dp).clip(RoundedCornerShape(9.dp))
+                        .background(Brush.linearGradient(listOf(Color(0xFF046A7A), Color(0xFF154080)))),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(Icons.Filled.Movie, null, tint = Cyan)
+                    }
+                    Spacer(Modifier.width(12.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(projectName, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text(count.toString() + " de 3 clipes", color = Muted, fontSize = 11.sp)
+                    }
+                    Text("Rascunho", color = Muted, fontSize = 11.sp)
                 }
-                Text("Abrir", color = Cyan, fontSize = 13.sp)
+            }
+        } else {
+            SurfaceCard {
+                Row(Modifier.fillMaxWidth().clickable(onClick = onNew).padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Filled.Folder, null, tint = Cyan, modifier = Modifier.size(28.dp))
+                    Spacer(Modifier.width(12.dp))
+                    Column {
+                        Text("Nenhum projeto recente", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("Toque para importar seus primeiros clipes", color = Muted, fontSize = 11.sp)
+                    }
+                }
             }
         }
-        Spacer(Modifier.height(26.dp))
-        SectionTitle("Modelos disponíveis")
-        Spacer(Modifier.height(10.dp))
+        Spacer(Modifier.height(20.dp))
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.weight(1f)) { SectionTitle("Modelos populares") }
+            Text("Ver todos ›", color = Cyan, fontSize = 12.sp, modifier = Modifier.clickable(onClick = onNew))
+        }
+        Spacer(Modifier.height(11.dp))
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             StyleCard("Viral dinâmico", "Cortes rápidos", selected = false, onClick = onNew)
             StyleCard("Profissional", "Discreto e limpo", selected = false, onClick = onNew)
             StyleCard("Cinematográfico", "Ritmo suave", selected = false, onClick = onNew)
         }
         Spacer(Modifier.height(16.dp))
-        Text("A montagem automática, legendas e exportação serão adicionadas nas próximas versões.", color = Muted, fontSize = 12.sp)
+        Text("Legenda, efeitos e exportação MP4 estão em desenvolvimento.", color = Muted, fontSize = 11.sp)
+    }
+}
+
+@Composable
+private fun HeroClip(uri: Uri?, index: Int) {
+    val ctx = LocalContext.current
+    val bmp = remember(uri) { if (uri != null) thumbnail(ctx, uri) else null }
+    Box(
+        Modifier.fillMaxWidth().height(34.dp).clip(RoundedCornerShape(6.dp))
+            .background(
+                Brush.horizontalGradient(
+                    if (index % 2 == 0)
+                        listOf(Color(0xFF0A7180), Color(0xFF4C8BC4))
+                    else listOf(Color(0xFF414B89), Color(0xFF169EBA))
+                )
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        if (bmp != null) {
+            Image(bmp.asImageBitmap(), null, Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+        }
+        Icon(Icons.Filled.PlayArrow, null, tint = Color.White, modifier = Modifier.size(18.dp))
     }
 }
 
 @Composable
 private fun Metric(label: String, value: String, modifier: Modifier = Modifier) {
     SurfaceCard(modifier) {
-        Column(Modifier.padding(12.dp)) {
-            Text(label, color = Muted, fontSize = 11.sp)
-            Spacer(Modifier.height(3.dp))
-            Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 24.sp)
+        Column(Modifier.padding(horizontal = 11.dp, vertical = 12.dp)) {
+            val icon = when (label) {
+                "Projetos" -> Icons.Filled.Folder
+                "Exportados" -> Icons.Filled.CheckCircle
+                else -> Icons.Filled.Movie
+            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(icon, null, tint = Cyan, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text(label, color = Muted, fontSize = 10.sp, maxLines = 1)
+            }
+            Text(value, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
         }
     }
 }
@@ -483,6 +585,22 @@ private fun ProjectsScreen(projectName: String, clipCount: Int, open: () -> Unit
 }
 
 @Composable
+private fun ExportsScreen() {
+    SectionTitle("Exportações")
+    Spacer(Modifier.height(18.dp))
+    SurfaceCard {
+        Row(Modifier.fillMaxWidth().padding(20.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.VideoLibrary, null, tint = Cyan, modifier = Modifier.size(38.dp))
+            Spacer(Modifier.width(14.dp))
+            Column {
+                Text("Nenhum vídeo exportado", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("A exportação MP4 chegará nas próximas etapas.", color = Muted, fontSize = 12.sp)
+            }
+        }
+    }
+}
+
+@Composable
 private fun PropertyRow(name: String, value: String) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
         Text(name, color = Muted, fontSize = 13.sp)
@@ -513,7 +631,7 @@ private fun Navigation(selected: String, navigate: (String) -> Unit) {
             .clickable { navigate("create") }, contentAlignment = Alignment.Center) {
             Icon(Icons.Filled.Add, "Novo projeto", tint = Background, modifier = Modifier.size(32.dp))
         }
-        NavItem(Icons.Filled.Movie, "Criar", selected == "create" || selected == "preview") { navigate("create") }
+        NavItem(Icons.Filled.VideoLibrary, "Exportações", selected == "exports") { navigate("exports") }
     }
 }
 
