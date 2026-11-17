@@ -132,7 +132,7 @@ private fun ClipPilotApp() {
         Scaffold(
             containerColor = Background,
             bottomBar = {
-                Column {
+                Column(Modifier.navigationBarsPadding()) {
                     if (screen == "create") {
                         Button(
                             onClick = { previewIndex = 0; screen = "preview" },
@@ -488,10 +488,15 @@ private fun SmallOption(title: String, value: String, modifier: Modifier = Modif
 @Composable
 private fun StyleCard(title: String, detail: String, selected: Boolean, onClick: () -> Unit) {
     val borderColor = if (selected) Cyan else Color(0xFF274861)
+    val gradientColors = when (title) {
+        "Profissional" -> listOf(Color(0xFF0B4771), Color(0xFF112442))
+        "Cinematográfico" -> listOf(Color(0xFF5A3675), Color(0xFF271D40))
+        else -> listOf(Color(0xFF064D61), Color(0xFF112138))
+    }
     Column(
-        Modifier.width(113.dp).height(100.dp).border(1.5.dp, borderColor, RoundedCornerShape(15.dp))
+        Modifier.width(117.dp).height(101.dp).border(1.5.dp, borderColor, RoundedCornerShape(15.dp))
             .clip(RoundedCornerShape(15.dp))
-            .background(Brush.linearGradient(listOf(Color(0xFF064D61), Color(0xFF112138))))
+            .background(Brush.linearGradient(gradientColors))
             .clickable(onClick = onClick).padding(9.dp)
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -500,7 +505,7 @@ private fun StyleCard(title: String, detail: String, selected: Boolean, onClick:
             if (selected) Icon(Icons.Filled.CheckCircle, null, tint = Green, modifier = Modifier.size(18.dp))
         }
         Spacer(Modifier.height(7.dp))
-        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 2)
+        Text(title, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 10.sp, maxLines = 1)
         Text(detail, color = Muted, fontSize = 10.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
     }
 }
