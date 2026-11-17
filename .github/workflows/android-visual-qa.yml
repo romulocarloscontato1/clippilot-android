@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   screenshot:
@@ -88,3 +88,29 @@ jobs:
           path: qa/screenshots/
           if-no-files-found: warn
           retention-days: 14
+
+      - name: Publish real screenshots to qa-snapshots branch
+        if: success()
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/clippilot-qa"
+          cp qa/screenshots/*.png "${RUNNER_TEMP}/clippilot-qa/"
+          cat > "${RUNNER_TEMP}/clippilot-qa/manifest.json" <<EOF
+          {"run_id": ${GITHUB_RUN_ID}, "source_commit": "${GITHUB_SHA}", "capture": "Android 35 emulator adb screencap -p", "screens": ["01-home-real.png", "02-new-project-real.png"]}
+          EOF
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config user.name "github-actions[bot]"
+          if git ls-remote --exit-code --heads origin qa-snapshots >/dev/null; then
+            git fetch origin qa-snapshots
+            git checkout -B qa-snapshots origin/qa-snapshots
+          else
+            git checkout --orphan qa-snapshots
+            git rm -rf . || true
+          fi
+          mkdir -p screenshots
+          cp "${RUNNER_TEMP}/clippilot-qa/"*.png screenshots/
+          cp "${RUNNER_TEMP}/clippilot-qa/manifest.json" manifest.json
+          git add screenshots manifest.json
+          git commit -m "qa: real Android emulator screenshots from run ${GITHUB_RUN_ID}" || true
+          git push origin HEAD:qa-snapshots
